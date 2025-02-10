@@ -1,4 +1,5 @@
 fastapi
+markitdown
+openai
 python-multipart
 uvicorn
-markitdown
