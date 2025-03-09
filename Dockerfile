@@ -10,8 +10,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
-ENV EXIFTOOL_PATH=/usr/bin/exiftool
-
 COPY main.py .
 
 EXPOSE 8000
