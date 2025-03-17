@@ -1,5 +1,5 @@
 fastapi
-markitdown[all]==0.1.0a1
+markitdown[all]==0.1.0a4
 openai
 python-multipart
 uvicorn
