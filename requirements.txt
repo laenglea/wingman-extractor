@@ -1,5 +1,4 @@
-fastapi
-markitdown[all]==0.1.0
+grpcio
+grpcio-reflection
 openai
-python-multipart
-uvicorn
+markitdown[all]==0.1.2
