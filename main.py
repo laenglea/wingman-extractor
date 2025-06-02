@@ -1,6 +1,6 @@
 import os
-import tempfile
 import grpc
+import tempfile
 import mimetypes
 
 from concurrent import futures
@@ -56,7 +56,17 @@ class ExtractorServicer(extractor_pb2_grpc.ExtractorServicer):
             return extractor_pb2.File(content=data, content_type='text/markdown')
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    max_message_size = 100 * 1024 * 1024
+
+    options = [
+        ('grpc.max_receive_message_length', max_message_size),
+        ('grpc.max_send_message_length', max_message_size),
+    ]
+
+    server = grpc.server(
+        futures.ThreadPoolExecutor(max_workers=10),
+        options=options
+    )
 
     extractor = ExtractorServicer()
     extractor_pb2_grpc.add_ExtractorServicer_to_server(extractor, server)
