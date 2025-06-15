@@ -24,7 +24,7 @@ if openai_url or openai_api_key:
 markitdown = MarkItDown(llm_model=llm_model, llm_client=llm_client)
 
 class ExtractorServicer(extractor_pb2_grpc.ExtractorServicer):
-    def Extract(self, request: extractor_pb2.ExtractRequest, context: grpc.aio.ServicerContext):
+    def Extract(self, request: extractor_pb2.ExtractRequest, context: grpc.ServicerContext):
         file = request.file
         format = request.format or extractor_pb2.FORMAT_TEXT
 
