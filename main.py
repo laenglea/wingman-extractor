@@ -8,6 +8,8 @@ from grpc_reflection.v1alpha import reflection
 
 from openai import OpenAI
 from markitdown import MarkItDown
+import extract_msg
+from markdownify import markdownify
 
 import extractor_pb2
 import extractor_pb2_grpc
@@ -23,6 +25,47 @@ if openai_url or openai_api_key:
 
 markitdown = MarkItDown(llm_model=llm_model, llm_client=llm_client)
 
+def extract_msg_content(file_path: str) -> str:
+    """Extract content from MSG file using msg-extractor."""
+    msg = extract_msg.Message(file_path)
+    
+    content_parts = []
+    
+    if msg.subject:
+        content_parts.append(f"# {msg.subject}")
+    
+    if msg.sender:
+        content_parts.append(f"**From:** {msg.sender}")
+    
+    if msg.to:
+        content_parts.append(f"**To:** {msg.to}")
+    
+    if msg.cc:
+        content_parts.append(f"**CC:** {msg.cc}")
+    
+    if msg.date:
+        content_parts.append(f"**Date:** {msg.date}")
+    
+    content_parts.append("")  # Empty line before body
+    
+    if msg.body:
+        body = msg.body.strip()
+        content_parts.append(body)
+    elif msg.htmlBody:
+        body = markdownify(msg.htmlBody, heading_style="ATX")
+        content_parts.append(body)
+    
+    # Extract attachments info
+    # if msg.attachments:
+    #     content_parts.append("\n## Attachments")
+    #     for attachment in msg.attachments:
+    #         if hasattr(attachment, 'longFilename') and attachment.longFilename:
+    #             content_parts.append(f"- {attachment.longFilename}")
+    #         elif hasattr(attachment, 'shortFilename') and attachment.shortFilename:
+    #             content_parts.append(f"- {attachment.shortFilename}")
+    
+    return "\n".join(content_parts)
+
 class ExtractorServicer(extractor_pb2_grpc.ExtractorServicer):
     def Extract(self, request: extractor_pb2.ExtractRequest, context: grpc.ServicerContext):
         file = request.file
@@ -37,9 +80,14 @@ class ExtractorServicer(extractor_pb2_grpc.ExtractorServicer):
             context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
             context.set_details('Format must be FORMAT_TEXT')
             return extractor_pb2.File()
-        
-        file_ext = mimetypes.guess_extension(file.content_type) or '.tmp'
-        file_name = "input" + file_ext
+
+        if file.name:
+            file_name = file.name
+            file_ext = os.path.splitext(file.name)[1].lower()
+        else:
+            file_ext = mimetypes.guess_extension(file.content_type) or '.tmp'
+            file_name = "input" + file_ext
+
 
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = os.path.join(temp_dir, file_name)
@@ -47,8 +95,14 @@ class ExtractorServicer(extractor_pb2_grpc.ExtractorServicer):
             with open(file_path, "wb") as temp_file:
                 temp_file.write(file.content)
             
-            result = markitdown.convert(file_path)
-            data = bytes(result.text_content, 'utf-8')
+            # Check if it's an MSG file and handle it specially
+            if file_ext == '.msg':
+                text_content = extract_msg_content(file_path)
+            else:
+                result = markitdown.convert(file_path)
+                text_content = result.text_content
+            
+            data = bytes(text_content, 'utf-8')
 
             with open('page.md', 'wb') as f:
                 f.write(data)

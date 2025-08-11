@@ -2,3 +2,5 @@ grpcio
 grpcio-reflection
 openai
 markitdown[all]==0.1.2
+extract-msg
+markdownify
