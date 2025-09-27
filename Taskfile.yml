@@ -13,3 +13,7 @@ tasks:
   publish:
     cmds:
       - docker buildx build . --push --platform linux/amd64,linux/arm64 --tag {{.REPOSITORY}}:latest
+    
+  generate:
+    cmds:
+      - ./.venv/bin/python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. extractor.proto

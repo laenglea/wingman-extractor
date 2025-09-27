@@ -2,12 +2,16 @@ import os
 import grpc
 import tempfile
 import mimetypes
+import extract_msg
+import email
+import email.policy
 
 from concurrent import futures
 from grpc_reflection.v1alpha import reflection
 
 from openai import OpenAI
 from markitdown import MarkItDown
+from markdownify import markdownify
 
 import extractor_pb2
 import extractor_pb2_grpc
@@ -23,6 +27,142 @@ if openai_url or openai_api_key:
 
 markitdown = MarkItDown(llm_model=llm_model, llm_client=llm_client)
 
+def extract_msg_content(file_path: str) -> str:
+    """Extract content from MSG file using msg-extractor."""
+    msg = extract_msg.Message(file_path)
+    
+    content_parts = []
+    
+    if msg.subject:
+        content_parts.append(f"# {msg.subject}")
+    
+    if msg.sender:
+        content_parts.append(f"**From:** {msg.sender}")
+    
+    if msg.to:
+        content_parts.append(f"**To:** {msg.to}")
+    
+    if msg.cc:
+        content_parts.append(f"**CC:** {msg.cc}")
+    
+    if msg.bcc:
+        content_parts.append(f"**BCC:** {msg.bcc}")
+    
+    if msg.date:
+        content_parts.append(f"**Date:** {msg.date}")
+    
+    content_parts.append("")  # Empty line before body
+    
+    if msg.body:
+        body = msg.body.strip()
+        content_parts.append(body)
+    elif msg.htmlBody:
+        body = markdownify(msg.htmlBody, heading_style="ATX")
+        content_parts.append(body)
+    
+    # Extract attachments info
+    # if msg.attachments:
+    #     content_parts.append("\n## Attachments")
+    #     for attachment in msg.attachments:
+    #         if hasattr(attachment, 'longFilename') and attachment.longFilename:
+    #             content_parts.append(f"- {attachment.longFilename}")
+    #         elif hasattr(attachment, 'shortFilename') and attachment.shortFilename:
+    #             content_parts.append(f"- {attachment.shortFilename}")
+    
+    return "\n".join(content_parts)
+
+def extract_eml_content(file_path: str) -> str:
+    """Extract content from EML file using Python's email module."""
+    with open(file_path, 'rb') as f:
+        msg = email.message_from_bytes(f.read(), policy=email.policy.default)
+    
+    content_parts = []
+    
+    # Extract subject
+    if msg.get('Subject'):
+        content_parts.append(f"# {msg.get('Subject')}")
+    
+    # Extract sender
+    if msg.get('From'):
+        content_parts.append(f"**From:** {msg.get('From')}")
+    
+    # Extract recipients
+    if msg.get('To'):
+        content_parts.append(f"**To:** {msg.get('To')}")
+    
+    if msg.get('Cc'):
+        content_parts.append(f"**CC:** {msg.get('Cc')}")
+    
+    if msg.get('Bcc'):
+        content_parts.append(f"**BCC:** {msg.get('Bcc')}")
+    
+    # Extract date
+    if msg.get('Date'):
+        content_parts.append(f"**Date:** {msg.get('Date')}")
+    
+    content_parts.append("")  # Empty line before body
+    
+    # Extract body content
+    body_content = ""
+    
+    if msg.is_multipart():
+        # Handle multipart messages
+        for part in msg.walk():
+            content_type = part.get_content_type()
+            
+            if content_type == "text/plain":
+                payload = part.get_payload(decode=True)
+                if isinstance(payload, bytes):
+                    charset = part.get_content_charset() or 'utf-8'
+                    body_content = payload.decode(charset, errors='ignore')
+                else:
+                    body_content = str(payload)
+                break
+            elif content_type == "text/html" and not body_content:
+                # Use HTML as fallback if no plain text found
+                payload = part.get_payload(decode=True)
+                if isinstance(payload, bytes):
+                    charset = part.get_content_charset() or 'utf-8'
+                    html_content = payload.decode(charset, errors='ignore')
+                else:
+                    html_content = str(payload)
+                body_content = markdownify(html_content, heading_style="ATX")
+    else:
+        # Handle single part messages
+        content_type = msg.get_content_type()
+        payload = msg.get_payload(decode=True)
+        
+        if content_type == "text/plain":
+            if isinstance(payload, bytes):
+                body_content = payload.decode('utf-8', errors='ignore')
+            else:
+                body_content = str(payload)
+        elif content_type == "text/html":
+            if isinstance(payload, bytes):
+                html_content = payload.decode('utf-8', errors='ignore')
+            else:
+                html_content = str(payload)
+            body_content = markdownify(html_content, heading_style="ATX")
+    
+    if body_content:
+        content_parts.append(body_content.strip())
+    
+    # Extract attachment information
+    # if msg.is_multipart():
+    #     attachments = []
+    #     for part in msg.walk():
+    #         if part.get_content_disposition() == 'attachment':
+    #             filename = part.get_filename()
+    #             if filename:
+    #                 attachments.append(filename)
+    #     
+    #     if attachments:
+    #         content_parts.append("\n## Attachments")
+    #         for filename in attachments:
+    #             content_parts.append(f"- {filename}")
+    
+    return "\n".join(content_parts)
+
 class ExtractorServicer(extractor_pb2_grpc.ExtractorServicer):
     def Extract(self, request: extractor_pb2.ExtractRequest, context: grpc.ServicerContext):
         file = request.file
@@ -37,9 +177,14 @@ class ExtractorServicer(extractor_pb2_grpc.ExtractorServicer):
             context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
             context.set_details('Format must be FORMAT_TEXT')
             return extractor_pb2.File()
-        
-        file_ext = mimetypes.guess_extension(file.content_type) or '.tmp'
-        file_name = "input" + file_ext
+
+        if file.name:
+            file_name = file.name
+            file_ext = os.path.splitext(file.name)[1].lower()
+        else:
+            file_ext = mimetypes.guess_extension(file.content_type) or '.tmp'
+            file_name = "input" + file_ext
+
 
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = os.path.join(temp_dir, file_name)
@@ -47,8 +192,16 @@ class ExtractorServicer(extractor_pb2_grpc.ExtractorServicer):
             with open(file_path, "wb") as temp_file:
                 temp_file.write(file.content)
             
-            result = markitdown.convert(file_path)
-            data = bytes(result.text_content, 'utf-8')
+            # Check if it's an MSG file or EML file and handle it specially
+            if file_ext == '.msg':
+                text_content = extract_msg_content(file_path)
+            elif file_ext == '.eml':
+                text_content = extract_eml_content(file_path)
+            else:
+                result = markitdown.convert(file_path)
+                text_content = result.text_content
+            
+            data = bytes(text_content, 'utf-8')
 
             with open('page.md', 'wb') as f:
                 f.write(data)
