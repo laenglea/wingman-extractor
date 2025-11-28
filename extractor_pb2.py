@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0f\x65xtractor.proto\x12\textractor\"\x8a\x01\n\x0e\x45xtractRequest\x12\"\n\x04\x66ile\x18\x01 \x01(\x0b\x32\x0f.extractor.FileH\x00\x88\x01\x01\x12\x10\n\x03url\x18\x02 \x01(\tH\x01\x88\x01\x01\x12&\n\x06\x66ormat\x18\x03 \x01(\x0e\x32\x11.extractor.FormatH\x02\x88\x01\x01\x42\x07\n\x05_fileB\x06\n\x04_urlB\t\n\x07_format\";\n\x04\x46ile\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\x0c\x12\x14\n\x0c\x63ontent_type\x18\x03 \x01(\t*;\n\x06\x46ormat\x12\x0f\n\x0b\x46ORMAT_TEXT\x10\x00\x12\x10\n\x0c\x46ORMAT_IMAGE\x10\x01\x12\x0e\n\nFORMAT_PDF\x10\x02\x32\x44\n\tExtractor\x12\x37\n\x07\x45xtract\x12\x19.extractor.ExtractRequest\x1a\x0f.extractor.File\"\x00\x42>Z<github.com/adrianliechti/wingman/pkg/extractor/custom;customb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0f\x65xtractor.proto\x12\textractor\";\n\x04\x46ile\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\x0c\x12\x14\n\x0c\x63ontent_type\x18\x03 \x01(\t\"/\n\x0e\x45xtractRequest\x12\x1d\n\x04\x66ile\x18\x01 \x01(\x0b\x32\x0f.extractor.File\"\x18\n\x08\x44ocument\x12\x0c\n\x04text\x18\x01 \x01(\t2H\n\tExtractor\x12;\n\x07\x45xtract\x12\x19.extractor.ExtractRequest\x1a\x13.extractor.Document\"\x00\x42>Z<github.com/adrianliechti/wingman/pkg/extractor/custom;customb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,12 +32,12 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'extractor_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z<github.com/adrianliechti/wingman/pkg/extractor/custom;custom'
-  _globals['_FORMAT']._serialized_start=232
-  _globals['_FORMAT']._serialized_end=291
-  _globals['_EXTRACTREQUEST']._serialized_start=31
-  _globals['_EXTRACTREQUEST']._serialized_end=169
-  _globals['_FILE']._serialized_start=171
-  _globals['_FILE']._serialized_end=230
-  _globals['_EXTRACTOR']._serialized_start=293
-  _globals['_EXTRACTOR']._serialized_end=361
+  _globals['_FILE']._serialized_start=30
+  _globals['_FILE']._serialized_end=89
+  _globals['_EXTRACTREQUEST']._serialized_start=91
+  _globals['_EXTRACTREQUEST']._serialized_end=138
+  _globals['_DOCUMENT']._serialized_start=140
+  _globals['_DOCUMENT']._serialized_end=164
+  _globals['_EXTRACTOR']._serialized_start=166
+  _globals['_EXTRACTOR']._serialized_end=238
 # @@protoc_insertion_point(module_scope)
