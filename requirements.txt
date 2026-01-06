@@ -2,6 +2,6 @@ grpcio
 grpcio-tools
 grpcio-reflection
 openai
-markitdown[all]
+markitdown[pptx, docx, xlsx, pdf]
 extract-msg
 markdownify
