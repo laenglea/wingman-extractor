@@ -5,7 +5,7 @@ import warnings
 
 import extractor_pb2 as extractor__pb2
 
-GRPC_GENERATED_VERSION = '1.74.0'
+GRPC_GENERATED_VERSION = '1.76.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in extractor_pb2_grpc.py depends on'
+        + ' but the generated code in extractor_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -37,7 +37,7 @@ class ExtractorStub(object):
         self.Extract = channel.unary_unary(
                 '/extractor.Extractor/Extract',
                 request_serializer=extractor__pb2.ExtractRequest.SerializeToString,
-                response_deserializer=extractor__pb2.File.FromString,
+                response_deserializer=extractor__pb2.Document.FromString,
                 _registered_method=True)
 
 
@@ -56,7 +56,7 @@ def add_ExtractorServicer_to_server(servicer, server):
             'Extract': grpc.unary_unary_rpc_method_handler(
                     servicer.Extract,
                     request_deserializer=extractor__pb2.ExtractRequest.FromString,
-                    response_serializer=extractor__pb2.File.SerializeToString,
+                    response_serializer=extractor__pb2.Document.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -85,7 +85,7 @@ class Extractor(object):
             target,
             '/extractor.Extractor/Extract',
             extractor__pb2.ExtractRequest.SerializeToString,
-            extractor__pb2.File.FromString,
+            extractor__pb2.Document.FromString,
             options,
             channel_credentials,
             insecure,

@@ -1,29 +1,9 @@
-from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from collections.abc import Mapping as _Mapping
 from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
-
-class Format(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
-    __slots__ = ()
-    FORMAT_TEXT: _ClassVar[Format]
-    FORMAT_IMAGE: _ClassVar[Format]
-    FORMAT_PDF: _ClassVar[Format]
-FORMAT_TEXT: Format
-FORMAT_IMAGE: Format
-FORMAT_PDF: Format
-
-class ExtractRequest(_message.Message):
-    __slots__ = ("file", "url", "format")
-    FILE_FIELD_NUMBER: _ClassVar[int]
-    URL_FIELD_NUMBER: _ClassVar[int]
-    FORMAT_FIELD_NUMBER: _ClassVar[int]
-    file: File
-    url: str
-    format: Format
-    def __init__(self, file: _Optional[_Union[File, _Mapping]] = ..., url: _Optional[str] = ..., format: _Optional[_Union[Format, str]] = ...) -> None: ...
 
 class File(_message.Message):
     __slots__ = ("name", "content", "content_type")
@@ -34,3 +14,15 @@ class File(_message.Message):
     content: bytes
     content_type: str
     def __init__(self, name: _Optional[str] = ..., content: _Optional[bytes] = ..., content_type: _Optional[str] = ...) -> None: ...
+
+class ExtractRequest(_message.Message):
+    __slots__ = ("file",)
+    FILE_FIELD_NUMBER: _ClassVar[int]
+    file: File
+    def __init__(self, file: _Optional[_Union[File, _Mapping]] = ...) -> None: ...
+
+class Document(_message.Message):
+    __slots__ = ("text",)
+    TEXT_FIELD_NUMBER: _ClassVar[int]
+    text: str
+    def __init__(self, text: _Optional[str] = ...) -> None: ...

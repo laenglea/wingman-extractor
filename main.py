@@ -33,23 +33,11 @@ def extract_msg_content(file_path: str) -> str:
     
     content_parts = []
     
-    if msg.subject:
-        content_parts.append(f"# {msg.subject}")
+    content_parts.append(f"# {msg.subject or '(No Subject)'}")
     
-    if msg.sender:
-        content_parts.append(f"**From:** {msg.sender}")
-    
-    if msg.to:
-        content_parts.append(f"**To:** {msg.to}")
-    
-    if msg.cc:
-        content_parts.append(f"**CC:** {msg.cc}")
-    
-    if msg.bcc:
-        content_parts.append(f"**BCC:** {msg.bcc}")
-    
-    if msg.date:
-        content_parts.append(f"**Date:** {msg.date}")
+    for field, label in [('sender', 'From'), ('to', 'To'), ('cc', 'CC'), ('bcc', 'BCC'), ('date', 'Date')]:
+        if value := getattr(msg, field, None):
+            content_parts.append(f"**{label}:** {value}")
     
     content_parts.append("")  # Empty line before body
     
@@ -57,7 +45,8 @@ def extract_msg_content(file_path: str) -> str:
         body = msg.body.strip()
         content_parts.append(body)
     elif msg.htmlBody:
-        body = markdownify(msg.htmlBody, heading_style="ATX")
+        body = msg.htmlBody.decode('utf-8', errors='ignore')
+        body = markdownify(body, heading_style="ATX")
         content_parts.append(body)
     
     # Extract attachments info
@@ -78,27 +67,11 @@ def extract_eml_content(file_path: str) -> str:
     
     content_parts = []
     
-    # Extract subject
-    if msg.get('Subject'):
-        content_parts.append(f"# {msg.get('Subject')}")
+    content_parts.append(f"# {msg.get('Subject') or '(No Subject)'}")
     
-    # Extract sender
-    if msg.get('From'):
-        content_parts.append(f"**From:** {msg.get('From')}")
-    
-    # Extract recipients
-    if msg.get('To'):
-        content_parts.append(f"**To:** {msg.get('To')}")
-    
-    if msg.get('Cc'):
-        content_parts.append(f"**CC:** {msg.get('Cc')}")
-    
-    if msg.get('Bcc'):
-        content_parts.append(f"**BCC:** {msg.get('Bcc')}")
-    
-    # Extract date
-    if msg.get('Date'):
-        content_parts.append(f"**Date:** {msg.get('Date')}")
+    for field, label in [('From', 'From'), ('To', 'To'), ('Cc', 'CC'), ('Bcc', 'BCC'), ('Date', 'Date')]:
+        if value := msg.get(field):
+            content_parts.append(f"**{label}:** {value}")
     
     content_parts.append("")  # Empty line before body
     
@@ -166,16 +139,10 @@ def extract_eml_content(file_path: str) -> str:
 class ExtractorServicer(extractor_pb2_grpc.ExtractorServicer):
     def Extract(self, request: extractor_pb2.ExtractRequest, context: grpc.ServicerContext):
         file = request.file
-        format = request.format or extractor_pb2.FORMAT_TEXT
 
         if not file:
             context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
             context.set_details('File is required but not provided')
-            return extractor_pb2.File()
-        
-        if format is not extractor_pb2.FORMAT_TEXT:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details('Format must be FORMAT_TEXT')
             return extractor_pb2.File()
 
         if file.name:
@@ -200,13 +167,8 @@ class ExtractorServicer(extractor_pb2_grpc.ExtractorServicer):
             else:
                 result = markitdown.convert(file_path)
                 text_content = result.text_content
-            
-            data = bytes(text_content, 'utf-8')
 
-            with open('page.md', 'wb') as f:
-                f.write(data)
-
-            return extractor_pb2.File(content=data, content_type='text/markdown')
+            return extractor_pb2.Document(text=text_content)
 
 def serve():
     max_message_size = 100 * 1024 * 1024
